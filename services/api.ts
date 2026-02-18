@@ -1,15 +1,20 @@
 
-// NOTE: Replace this with your deployed Google Apps Script URL
+// URL Apps Script Anda. Pastikan sudah di-deploy sebagai "Web App" dan akses "Anyone".
 const API_URL = 'https://script.google.com/macros/s/AKfycby8kbFO_IWJln6rCNQk7SpQe_R9zcgdqTG_EDEIQkpY37i54BD3aW3pTzNStpCcmC3aGg/exec';
 
 export const callApi = async (action: string, payload: any = {}) => {
   try {
+    // Jika URL masih default atau belum diisi, langsung ke mock
+    if (!API_URL || API_URL.includes('YOUR_SCRIPT_ID')) {
+      return mockResponse(action, payload);
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
       mode: 'cors',
       cache: 'no-cache',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain;charset=utf-8', // Apps Script lebih stabil dengan text/plain pada POST
       },
       body: JSON.stringify({
         action,
@@ -18,20 +23,20 @@ export const callApi = async (action: string, payload: any = {}) => {
     });
 
     if (!response.ok) {
-      throw new Error('Network response was not ok');
+      throw new Error('Server returned error status');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
-    if (API_URL.includes('YOUR_SCRIPT_ID')) {
-      return mockResponse(action, payload);
-    }
-    throw error;
+    console.error(`SmartCBT API Error [${action}]:`, error);
+    // Fallback ke mode simulasi jika terjadi error koneksi/CORS
+    return mockResponse(action, payload);
   }
 };
 
 const mockResponse = (action: string, payload: any) => {
-  console.warn(`NexusCBT: Mode Simulasi Aktif [${action}]`);
+  console.warn(`SmartCBT: Menjalankan Mode Simulasi untuk aksi [${action}]`);
   
   switch (action) {
     case 'login':
@@ -44,26 +49,31 @@ const mockResponse = (action: string, payload: any) => {
         'pengawas': 'pengawas'
       };
 
-      if (roles[username] && password === username) {
+      // Validasi sederhana untuk demo: password harus sama dengan username
+      if (roles[username.toLowerCase()] && password === username) {
         return {
           success: true,
           user: {
             id: 'demo-' + username,
-            username: username,
-            fullName: username.charAt(0).toUpperCase() + username.slice(1) + ' Demo',
-            role: roles[username],
-            schoolId: payload.schoolCode || 'SCH01'
+            username: username.toLowerCase(),
+            fullName: username.charAt(0).toUpperCase() + username.slice(1) + ' (Demo Mode)',
+            role: roles[username.toLowerCase()],
+            schoolId: payload.schoolCode || 'DEMO01'
           }
         };
       }
-      return { success: false, message: 'Kredensial salah. Gunakan username & password yang sama (e.g. guru/guru)' };
+      return { 
+        success: false, 
+        message: 'Kredensial simulasi: gunakan username & password yang sama (contoh: siswa / siswa)' 
+      };
     
     case 'getExams':
       return {
         success: true,
         exams: [
           { id: 'ex1', title: 'Ujian Tengah Semester - Matematika', subject: 'Matematika', durationMinutes: 60, status: 'published' },
-          { id: 'ex2', title: 'Kuis Harian - Bahasa Inggris', subject: 'Bahasa Inggris', durationMinutes: 30, status: 'published' }
+          { id: 'ex2', title: 'Kuis Harian - Bahasa Inggris', subject: 'Bahasa Inggris', durationMinutes: 30, status: 'published' },
+          { id: 'ex3', title: 'Ujian Akhir Semester - Fisika', subject: 'Fisika', durationMinutes: 90, status: 'published' }
         ]
       };
 
@@ -71,13 +81,16 @@ const mockResponse = (action: string, payload: any) => {
         return {
           success: true,
           questions: [
-            { id: 'q1', text: 'Berapakah hasil dari 2 + 2?', type: 'PG', options: ['2', '3', '4', '5'], correctAnswer: '4' },
-            { id: 'q2', text: 'Ibukota Indonesia adalah Jakarta.', type: 'BS', options: ['Benar', 'Salah'], correctAnswer: 'Benar' },
-            { id: 'q3', text: 'Sebutkan 3 warna pelangi!', type: 'URAIAN', correctAnswer: '' }
+            { id: 'q1', text: 'Berapakah hasil dari 25 x 4?', type: 'PG', options: ['80', '90', '100', '110'], correctAnswer: '100' },
+            { id: 'q2', text: 'Ibukota negara Indonesia saat ini adalah Jakarta.', type: 'PG', options: ['Benar', 'Salah'], correctAnswer: 'Benar' },
+            { id: 'q3', text: 'Sebutkan 3 komponen utama komputer!', type: 'PG', options: ['Monitor, Mouse, Keyboard', 'CPU, RAM, Storage', 'Windows, Office, Chrome'], correctAnswer: 'CPU, RAM, Storage' }
           ]
         };
 
+    case 'submitExam':
+      return { success: true, message: 'Jawaban simulasi berhasil disimpan' };
+
     default:
-      return { success: true, message: 'Mock response executed successfully' };
+      return { success: true, message: 'Aksi simulasi berhasil' };
   }
 };

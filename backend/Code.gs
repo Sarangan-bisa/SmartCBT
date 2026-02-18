@@ -6,8 +6,18 @@
 
 const SS_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 
+function doGet(e) {
+  return ContentService.createTextOutput("SmartCBT API is Active").setMimeType(ContentService.MimeType.TEXT);
+}
+
 function doPost(e) {
-  const request = JSON.parse(e.postData.contents);
+  let request;
+  try {
+    request = JSON.parse(e.postData.contents);
+  } catch (err) {
+    return response({ success: false, message: 'Invalid JSON body' });
+  }
+
   const action = request.action;
   
   try {
@@ -21,10 +31,10 @@ function doPost(e) {
       case 'submitExam':
         return response(submitExam(request));
       default:
-        return response({ success: false, message: 'Invalid Action' });
+        return response({ success: false, message: 'Invalid Action: ' + action });
     }
   } catch (err) {
-    return response({ success: false, message: err.toString() });
+    return response({ success: false, message: 'Server Error: ' + err.toString() });
   }
 }
 
@@ -38,13 +48,16 @@ function response(data) {
  */
 function handleLogin(payload) {
   const { username, password, schoolCode } = payload;
-  const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Users');
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName('Users');
+  if (!sheet) return { success: false, message: 'Sheet "Users" not found' };
+
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
   
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (row[1] == username && row[2] == password && row[4] == schoolCode) {
+    // Pastikan perbandingan menggunakan string untuk menghindari error tipe data
+    if (String(row[1]) === String(username) && String(row[2]) === String(password) && String(row[4]) === String(schoolCode)) {
       return {
         success: true,
         user: {
@@ -57,16 +70,19 @@ function handleLogin(payload) {
       };
     }
   }
-  return { success: false, message: 'Invalid credentials or school code' };
+  return { success: false, message: 'Username, password, atau kode sekolah salah.' };
 }
 
 function getExams(schoolId) {
-  const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Exams');
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName('Exams');
+  if (!sheet) return { success: false, message: 'Sheet "Exams" not found' };
+
   const data = sheet.getDataRange().getValues();
   const exams = [];
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][5] == schoolId && data[i][7] == 'published') {
+    if (String(data[i][5]) === String(schoolId) && data[i][7] === 'published') {
       exams.push({
         id: data[i][0],
         title: data[i][1],
@@ -80,12 +96,15 @@ function getExams(schoolId) {
 }
 
 function getQuestions(examId) {
-  const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Questions');
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName('Questions');
+  if (!sheet) return { success: false, message: 'Sheet "Questions" not found' };
+
   const data = sheet.getDataRange().getValues();
   const questions = [];
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] == examId) {
+    if (String(data[i][1]) === String(examId)) {
       questions.push({
         id: data[i][0],
         text: data[i][2],
@@ -99,7 +118,10 @@ function getQuestions(examId) {
 }
 
 function submitExam(payload) {
-  const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Responses');
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName('Responses');
+  if (!sheet) return { success: false, message: 'Sheet "Responses" not found' };
+
   sheet.appendRow([
     new Date(),
     payload.userId,
