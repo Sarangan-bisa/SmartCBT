@@ -33,7 +33,7 @@ const SiswaDashboard: React.FC<SiswaDashboardProps> = ({ user, onStartExam }) =>
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl">
         <h3 className="text-2xl font-bold mb-2">Halo, {user.fullName}! 👋</h3>
-        <p className="opacity-90">Selamat datang kembali di portal ujian NexusCBT. Periksa jadwal ujianmu hari ini.</p>
+        <p className="opacity-90">Selamat datang kembali di portal ujian SmartCBT. Periksa jadwal ujianmu hari ini.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
