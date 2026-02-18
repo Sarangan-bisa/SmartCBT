@@ -1,0 +1,7 @@
+{
+  "name": "SmartCBT - Platform Ujian Online",
+  "description": "A high-performance, multi-tenant Computer Based Test (CBT) platform featuring school isolation, multiple question formats, real-time monitoring, and deep analytics powered by Google Apps Script and React.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
